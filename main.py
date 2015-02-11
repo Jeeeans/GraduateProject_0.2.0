@@ -11,7 +11,7 @@ env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
 dome = viz.add('skydome.dlc')
 dome.texture(env)
 
-#####################Avatar#######################
+#####################Insight#######################
 male = viz.add('vcc_male.cfg')
 male.setPosition([1,0,0])
 male.setEuler([0,0,0],viz.REL_LOCAL)
@@ -43,7 +43,7 @@ viz.eyeheight(0)
 #####################Avatar#####################
 
 avatar = viz.add('soccerball.ive')
-avatar.setPosition(1,0.5,10)
+avatar.setPosition(1,0.5,11)
 avatar.collideSphere()
 avatar.enable(viz.COLLIDE_NOTIFY)
 
@@ -52,46 +52,72 @@ import random
 car = viz.add('soccerball.ive')
 car.collideSphere()
 
-car_loc = random.randint(0,4)
+carLoc = random.randint(0,2)
 car.setPosition(10,.5,5)
 
 
-def avatar_move():
-	avatar.setVelocity([0,0,-3], viz.ABS_GLOBAL)
-	
-	if car_loc%2 == 1:
-		car.setVelocity([-3,0,0], viz.ABS_GLOBAL)
-	else :
-		car.setVelocity([3,0,0], viz.ABS_GLOBAL)
+############################Timer#########################
+time = 0
+def Timer():
+	global time
+	time = time + 0.01
 
-
+vizact.ontimer(0.01, Timer)
 ##########################Training########################
-
-stage = 5
+level = 1
+stage = 6
 carPosition = 0
+
 import viztask
 
-
+def avatar_move():
+	avatar.setVelocity([0,0,level*-1-2], viz.ABS_GLOBAL)
+	
+	if carLoc%2 == 1:
+		car.setVelocity([level*-1-2,0,0], viz.ABS_GLOBAL)
+	else :
+		car.setVelocity([level+2,0,0], viz.ABS_GLOBAL)
+		
 def Reset():
-	global car_loc
+	global carLoc
 	
 	avatar.reset()
-	avatar.setPosition(1,0.5,10)
+	avatar.setPosition(1,0.5,11)
 	
-	car_loc = random.randint(0,4)
+	carLoc = random.randint(0,2)
 	car.reset()
 	car.setPosition(10,.5,5)
 
 def GetCarPosition():
 	global carPosition
 	carPosition = car.getPosition();
-	print carPosition
+	if carLoc%2 == 1 :
+		if carPosition[0]-1 < stage/3 :
+			print "1/3!!!!"
+		elif carPosition[0]-1 < stage*2/3 :
+			print "2/3!!!!"
+	else :
+		if 1-carPosition[0] < stage/3 :
+			print "1/3!!!!"
+		elif 1-carPosition[0] < stage*2/3 :
+			print "2/3!!!!"
 	
 def onCollideBegin(e):
+	global stage
+	global level
 	if e.obj2 == car:
 		print 'collide!'
-		
+		Reset()
+		if stage < 6 :
+			stage = stage - 1
+		else :
+			level = level - 1
+
+
+###############Use Schedule#####################################################
 def TestReactionTime():
+	global time
+	global level
 	global stage
 	yield viztask.waitKeyDown(' ')
 	
@@ -103,23 +129,25 @@ def TestReactionTime():
 		d = yield viztask.waitDraw()
 		
 		#Move Car Position
-		if car_loc%2 == 1 :
+		if carLoc%2 == 1 :
 			car.setPosition(1+stage,.5,5)
 		else :
 			car.setPosition(1-stage,.5,5)
 		
 		#Save start time
-		startTime = d.time
+		startTime = time
 		
 		#Wait for mouse reaction
 		
-		#d = yield viztask.waitEvent(viz.COLLIDE_BEGIN_EVENT)
-		#d = yield viztask.waitAny([viztask.waitMouseDown(viz.MOUSEBUTTON_LEFT), viztask.waitCall(viz.callback(viz.COLLIDE_BEGIN_EVENT, onCollideBegin)	)])
-		d = yield viztask.waitMouseDown(viz.MOUSEBUTTON_LEFT)
-		
+		d = yield viztask.waitAny([viztask.waitMouseDown(viz.MOUSEBUTTON_LEFT), viztask.waitEvent(viz.COLLIDE_BEGIN_EVENT)])
+		reactionTime = time - startTime
+		if level < 4 :
+			level = level + 1
+		elif stage > 1 :
+			stage = stage - 1
 		
 		#Calculate reaction time
-		reactionTime = d.time - startTime
+		
 
         #Print time
 
@@ -127,8 +155,13 @@ def TestReactionTime():
 		Reset()
 
 
-viz.callback(viz.COLLIDE_BEGIN_EVENT, onCollideBegin)		
+
+##############################################################################
 
 viztask.schedule(TestReactionTime())
 vizact.ontimer(0.01, GetCarPosition)
+viz.callback(viz.COLLIDE_BEGIN_EVENT, onCollideBegin)		
+
+viz.mouse.setTrap()
+viz.mouse.setVisible(viz.OFF)
 viz.phys.enable()
