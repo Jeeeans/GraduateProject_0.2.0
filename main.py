@@ -1,5 +1,8 @@
 ﻿import viz
 import vizact
+import random
+import viztask
+
 viz.go()
 
 #####################BackGround###################
@@ -24,7 +27,10 @@ def onMouseMove(e):
 		mey = my - (e.dy*0.2)
 	
 	viz.MainView.setEuler(mex, mey, mz)
+
+
 viz.callback(viz.MOUSE_MOVE_EVENT, onMouseMove)
+viz.mouse(viz.OFF)
 #####################Avatar#####################
 
 avatar = viz.add('soccerball.ive')
@@ -32,8 +38,8 @@ avatar.setPosition(0,0,11)
 avatar.collideSphere()
 avatar.enable(viz.COLLIDE_NOTIFY)
 
-import random
 
+#####################Car########################
 car = viz.add('soccerball.ive')
 car.collideSphere()
 
@@ -48,12 +54,15 @@ def Timer():
 	time = time + 0.01
 
 vizact.ontimer(0.01, Timer)
-##########################Training########################
+##########################Functions########################
 level = 1
 stage = 6
 carPosition = 0
 
-import viztask
+collideFlag = False
+visualFlag = False
+auditoryFlag = False
+
 
 def avatar_move():
 	avatar.setVelocity([0,0,level*-1-2], viz.ABS_GLOBAL)
@@ -75,40 +84,58 @@ def Reset():
 
 def GetCarPosition():
 	global carPosition
+	global visualFlag
+	global auditoryFlag
+	global stage
+	
 	carPosition = car.getPosition();
-	if carLoc%2 == 1 :
-		if carPosition[0]-1 < stage/3 :
-			print "1/3!!!!"
-		elif carPosition[0]-1 < stage*2/3 :
-			print "2/3!!!!"
-	else :
-		if 1-carPosition[0] < stage/3 :
-			print "1/3!!!!"
-		elif 1-carPosition[0] < stage*2/3 :
-			print "2/3!!!!"
+
+	if carPosition[0] != 10 :
+		if carLoc%2 == 1 :
+			if carPosition[0] < stage/3 :
+				visualFlag = True
+			elif carPosition[0] < stage*2/3 :
+				auditoryFlag = True
+		else :
+			if -1*carPosition[0] < stage/3 :
+				visualFlag = True
+			elif -1*carPosition[0] < stage*2/3 :
+				auditoryFlag = True
 	
 def onCollideBegin(e):
 	global stage
 	global level
+	global collideFlag
 	if e.obj2 == car:
 		print 'collide!'
-		
+		collideFlag = True
 		if stage < 6 :
-			stage = stage - 1
+			stage = stage + 1
 		else :
 			level = level - 1
-		Reset()
 
 
-###############Use Schedule#####################################################
+###############################Training##############################
 def TestReactionTime():
 	global time
 	global level
 	global stage
+	global collideFlag
+	global visualFlag
+	global auditoryFlag
+	
+	testCount = 0
+	leftReactionTime = 0
+	rightReactionTime = 0
+	taskFail = 0
+	visualCue = 0
+	auditoryCue = 0
+	
+	
 	#Start test from space down
 	yield viztask.waitKeyDown(' ')
 	
-	while True:
+	while testCount < 10:
 		yield viztask.waitTime(vizmat.GetRandom(1.5,2.5))
 		
 		avatar_move()
@@ -135,11 +162,38 @@ def TestReactionTime():
 		#Calculate reaction time
 		
 
-        #Print time
+        #Print time		
 
-		print 'Reaction time:',reactionTime
+		if collideFlag :
+			taskFail += 1
+		else :
+			if carLoc%2 == 1:
+				leftReactionTime = 0
+				rightReactionTime = reactionTime
+			else :
+				leftReactionTime = reactionTime
+				rightReactionTime = 0
+				
+		if visualFlag :
+			visualCue += 1
+			visualFlag = False
+		if auditoryFlag :
+			auditoryCue += 1
+			auditoryFlag = False
+			
+			
+		print 'Task ',testCount+1,' Traing'
+		print 'Reaction time : ',reactionTime
+		print 'Left Reaction Time : ',leftReactionTime
+		print 'Right Reaction Time : ',rightReactionTime
+		
+		collideFlag = False
+		testCount += 1
 		Reset()
-
+		
+	print 'vizsualCue : ',visualCue
+	print 'auditorycue : ',auditoryCue
+	print 'FailCount : ',taskFail
 
 
 ##############################################################################
