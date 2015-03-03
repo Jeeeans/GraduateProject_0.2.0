@@ -6,7 +6,7 @@ import viztask
 viz.go()
 
 #####################BackGround###################
-ground = viz.add('art/sphere_ground3.ive')
+ground = viz.add('tut_ground.wrl')
 ground.collidePlane(0,1,0,0)
 env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
 
@@ -31,17 +31,20 @@ def onMouseMove(e):
 viz.callback(viz.MOUSE_MOVE_EVENT, onMouseMove)
 viz.mouse(viz.OFF)
 #####################Avatar#####################
-avatar = viz.add('soccerball.ive')
+avatar = viz.add('vcc_male.cfg')
 avatar.setPosition(0,0,11)
+avatar.setEuler(180,0,0)
+avatar.clearActions()
 avatar.collideSphere()
 avatar.enable(viz.COLLIDE_NOTIFY)
 
 #####################Car########################
-car = viz.add('soccerball.ive')
-car.collideSphere()
+car = viz.add('mini.osgx')
+car.texblend(0.15,'',1)
+car.collideBox
 
 carLoc = random.randint(0,2)
-car.setPosition(10,100,5)
+car.setPosition(15,100,5)
 
 ############################Timer#########################
 time = 0
@@ -62,21 +65,29 @@ auditoryFlag = False
 
 
 def avatar_move():
-	avatar.setVelocity([0,0,level*-1-2], viz.ABS_GLOBAL)
-	
+	#avatar.setVelocity([0,0,level*-1-2], viz.ABS_GLOBAL)
+	avatar.addAction(vizact.move(0,0,level+2, 2))
+	avatar.state(2)
+
 	if carLoc%2 == 1:
-		car.setVelocity([level*-1-2,0,0], viz.ABS_GLOBAL)
+		#car.setVelocity([level*-1-2,0,0], viz.ABS_GLOBAL)
+		car.setEuler([-90,0,0], viz.ABS_GLOBAL)
+		car.addAction(vizact.move(0,0,level+2,2))
 	else :
-		car.setVelocity([level+2,0,0], viz.ABS_GLOBAL)
+		#car.setVelocity([level+2,0,0], viz.ABS_GLOBAL)
+		car.setEuler([90,0,0], viz.ABS_GLOBAL)
+		car.addAction(vizact.move(0,0,level+2,2))
 		
 def Reset():
 	global carLoc
 	
 	avatar.reset()
+	avatar.clearActions()
 	avatar.setPosition(0,0,11)
 	
 	carLoc = random.randint(0,2)
 	car.reset()
+	car.clearActions()
 	car.setPosition(10,100,5)
 
 def GetCarPosition():
@@ -128,9 +139,9 @@ def TestReactionTime():
 		
 		#Move Car Position
 		if carLoc%2 == 1 :
-			car.setPosition(stage,0,5)
+			car.setPosition(stage,0,10)
 		else :
-			car.setPosition(-stage,0,5)
+			car.setPosition(-stage,0,10)
 		
 		#Save start time
 		startTime = time
