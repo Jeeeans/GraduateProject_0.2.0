@@ -4,9 +4,20 @@ import random
 import viztask
 
 viz.go()
+################################################
+calibration = viz.addText('O', viz.WORLD)
+calibration.color(255,0,0)
+calibration.setPosition(0,1,10)
+calibration.setScale(.7,.7,.7)
+centerEuler = calibration.getEuler()
 
+
+
+center = viz.addText('O', viz.SCREEN)
+center.setPosition(.5,.5)
 #####################BackGround###################
-ground = viz.add('tut_ground.wrl')
+ground = viz.add('ground.osgb')
+
 ground.collidePlane(0,1,0,0)
 env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
 
@@ -15,21 +26,22 @@ dome.texture(env)
 
 #####################Insight#######################
 viz.MainView.setPosition([0,1,0])
-
+mainViewEuler = []
 def onMouseMove(e):
-	[mx,my,mz] = viz.MainView.getEuler()
-	mex = mx
-	mey = my
-	if mx +(e.dx*0.5) > -60 and mx +(e.dx*0.5) < 60 :
-		mex = mx +(e.dx*0.2)
-	if my - (e.dy*0.5) >-30 and my - (e.dy*0.5) < 20 :
-		mey = my - (e.dy*0.2)
+	global mainViewEuler
+	mainViewEuler = viz.MainView.getEuler()
+	mex = mainViewEuler[0]
+	mey = mainViewEuler[1]
+	if mainViewEuler[0] +(e.dx*0.5) > -60 and mainViewEuler[0] +(e.dx*0.5) < 60 :
+		mex = mainViewEuler[0] +(e.dx*0.2)
+	if mainViewEuler[1] - (e.dy*0.5) >-30 and mainViewEuler[1] - (e.dy*0.5) < 20 :
+		mey = mainViewEuler[1] - (e.dy*0.2)
 	
-	viz.MainView.setEuler(mex, mey, mz)
+	viz.MainView.setEuler(mex, mey, mainViewEuler[2])
 
 
 viz.callback(viz.MOUSE_MOVE_EVENT, onMouseMove)
-viz.mouse(viz.OFF)
+#viz.mouse(viz.OFF)
 #####################Avatar#####################
 avatar = viz.add('vcc_male.cfg')
 avatar.setPosition(0,0,11)
@@ -37,6 +49,7 @@ avatar.setEuler(180,0,0)
 avatar.clearActions()
 avatar.collideSphere()
 avatar.enable(viz.COLLIDE_NOTIFY)
+avatar.state(1)
 
 #####################Car########################
 car = viz.add('mini.osgx')
@@ -109,7 +122,14 @@ def GetCarPosition():
 				auditoryFlag = True
 			elif -1*carPosition[0] < stage*2/3 :
 				visualFlag = True
+
+def calibration() :
+	global mainViewEuler
+	global centerEuler
 	
+	if mainViewEuler == centerEuler :
+		print "calibration!!"
+		return true
 ###############################Training##############################
 def TestReactionTime():
 	global time
@@ -127,6 +147,7 @@ def TestReactionTime():
 	
 	waitMouse = viztask.waitMouseDown(viz.MOUSEBUTTON_LEFT)
 	waitCollide = viztask.waitEvent(viz.COLLIDE_BEGIN_EVENT)
+
 	#Start test from space down
 	yield viztask.waitKeyDown(' ')
 	
@@ -167,7 +188,9 @@ def TestReactionTime():
 			elif level > 1 :
 				level = level - 1
 			taskFail += 1
-		
+			
+			
+		#yield viztask.waitTrue( lambda: mainViewEuler == centerEuler )
 		
 		#Calculate reaction time
 		
@@ -184,6 +207,11 @@ def TestReactionTime():
 		print 'Left Reaction Time : ',leftReactionTime
 		print 'Right Reaction Time : ',rightReactionTime
 		
+		
+
+		#yield viztask.waitAll([waitCalibration])
+		#calibration()
+		
 		testCount += 1
 		Reset()
 		
@@ -199,4 +227,6 @@ vizact.ontimer(0.01, GetCarPosition)
 viz.mouse.setTrap()
 #unvisible mouse pointer
 viz.mouse.setVisible(viz.OFF)
+
+
 viz.phys.enable()
