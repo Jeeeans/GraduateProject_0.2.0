@@ -138,9 +138,6 @@ redLight = viz.addLight()
 redLight.color(255,0,0)
 redLight.setPosition(0,2,10)
 
-#####################calibration###################
-calibration = viz.addText("O", parent = viz.SCREEN)
-viz.link(viz.CenterBottom, calibration)
 ############################Timer#########################
 time = 0
 def Timer():
@@ -210,6 +207,7 @@ def startCalibration() :
 	global center
 	global calibration
 	global text
+	
 	center.visible(viz.ON)
 	calibration.visible(viz.ON)
 	text.visible(viz.ON)
@@ -405,7 +403,5 @@ vizact.ontimer(0.01, GetCarPosition)
 #don't move out mouse pointer
 viz.mouse.setTrap()
 #unvisible mouse pointer
-
-
 
 viz.phys.enable()
