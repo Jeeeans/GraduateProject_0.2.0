@@ -6,7 +6,7 @@ import viztask
 viz.go()
 
 #####################BackGround###################
-ground = viz.add('tut_ground.wrl')
+ground = viz.add('ground.osgb')
 ground.collidePlane(0,1,0,0)
 env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
 
@@ -37,15 +37,19 @@ avatar.setEuler(180,0,0)
 avatar.clearActions()
 avatar.collideSphere()
 avatar.enable(viz.COLLIDE_NOTIFY)
+avatar.state(1)
 
 #####################Car########################
 car = viz.add('mini.osgx')
 car.texblend(0.15,'',1)
-car.collideBox
+car.collideBox()
 
 carLoc = random.randint(0,2)
 car.setPosition(15,100,5)
 
+#####################calibration###################
+calibration = viz.addText("O", parent = viz.SCREEN)
+viz.link(viz.CenterBottom, calibration)
 ############################Timer#########################
 time = 0
 def Timer():
@@ -139,9 +143,9 @@ def TestReactionTime():
 		
 		#Move Car Position
 		if carLoc%2 == 1 :
-			car.setPosition(stage,0,10)
+			car.setPosition(stage,0.4,10)
 		else :
-			car.setPosition(-stage,0,10)
+			car.setPosition(-stage,0.4,10)
 		
 		#Save start time
 		startTime = time
