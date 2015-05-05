@@ -220,9 +220,6 @@ def calibrationCheck() :
 	global center
 	global text
 	
-	print mainViewEuler
-	print calibrationEuler
-	
 	while(True) :
 		if mainViewEuler[0] > calibrationEuler[0]-1 and mainViewEuler[0] < calibrationEuler[0]+1 and mainViewEuler[1] > calibrationEuler[1]-1 and mainViewEuler[1] < calibrationEuler[1]+1 and mainViewEuler[2] > calibrationEuler[2]-1 and mainViewEuler[2] < calibrationEuler[2]+1:
 			calibration.visible(viz.OFF)
@@ -297,7 +294,7 @@ def TestReactionTime():
 
 		result = "Reaction time\tLeft Reaction Time\tRight ReactionTime\n"
 		resultFile.write(result)
-		print 'name:',name,'level:',level,'stage:',stage
+		#print 'name:',name,'level:',level,'stage:',stage
 		
 	form.remove()
 	viz.mouse.setVisible(viz.OFF)
@@ -340,7 +337,8 @@ def TestReactionTime():
 		d = yield viztask.waitAny([waitMouseLEFT, waitMouseRIGHT, waitCollide])
 		
 		reactionTime = time - startTime
-		
+		leftReactionTime=0
+		rightReactionTime=0
 		if d.condition is waitMouseLEFT:
 			if carLoc%2 == 1:
 				incorrectReact()
