@@ -60,14 +60,6 @@ def showTaskInfo():
 	taskInfo = "이것은 Virtual Street Task 입니다. 이 테스트는 길을 건너오는 아바타가 차에 치이지 않도록 하는 것이 목적입니다.\n 차가 나오는 방향에 따라 마우스의 왼쪽 또는 오른쪽 버튼을 누르십시오. 차가 왼쪽에서 나타난다면 왼쪽버튼을 오른쪽에서 나타난다면 오른쪽버튼을 누르시면 됩니다. 차가 나오는 방향을 맞추셨다면 점점 난이도가 올라가게 될 것입니다."
 	info.addItem(viz.addText(taskInfo))
 		
-#####################BackGround###################
-ground = viz.add('ground.osgb')
-
-ground.collidePlane(0,1,0,0)
-#env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
-
-dome = viz.add('skydome.dlc')
-#dome.texture(env)
 
 #####################Insight#######################
 viz.MainView.setPosition([0,1,0])
@@ -105,38 +97,62 @@ text = viz.addText('빨간원에 하얀원을 맞추십시오.', viz.SCREEN)
 text.setPosition(.1,.6)
 text.visible(viz.OFF)
 
-#####################Avatar#####################
-avatar = viz.add('vcc_male.cfg')
-avatar.setEuler(180,0,0)
-avatar.clearActions()
-avatar.collideSphere()
-avatar.enable(viz.COLLIDE_NOTIFY)
-avatar.state(1)
 
-#####################Car########################
-car = viz.add('mini.osgx')
-car.texblend(0.15,'',1)
-car.collideBox()
+#########################Objects########################
 
-carLoc = random.randint(0,2)
-car.setPosition(15,100,5)
-headLight = [1,2]
-for element in headLight:
-	element = viz.addLight()
-	element.position(0,0,0,1)
-	element.spread(30)
-	element.intensity(100)
-	element.color(255,0,0)
-	viz.link(car, element)
 
-#####################Cross Walk Light####################
-greenLight = viz.addLight()
-greenLight.color(0,255,0)
-greenLight.setPosition(0,0,10)
+def addObjects():
+	global ground
+	global dome
+	global avatar
+	global car
+	global carLoc
+	global greenLight
+	global redLight
+	#####################BackGround###################
+	ground = viz.add('ground.osgb')
 
-redLight = viz.addLight()
-redLight.color(255,0,0)
-redLight.setPosition(0,2,10)
+	ground.collidePlane(0,1,0,0)
+	#env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
+
+	dome = viz.add('skydome.dlc')
+	#dome.texture(env)
+
+	#####################Avatar#####################
+	avatar = viz.add('vcc_male.cfg')
+	avatar.setEuler(180,0,0)
+	avatar.clearActions()
+	avatar.collideSphere()
+	avatar.enable(viz.COLLIDE_NOTIFY)
+	avatar.state(1)
+
+	#####################Car########################
+	car = viz.add('mini.osgx')
+	car.texblend(0.15,'',1)
+	car.collideBox()
+
+	carLoc = random.randint(0,2)
+	car.setPosition(15,100,5)
+	headLight = [1,2]
+	for element in headLight:
+		element = viz.addLight()
+		element.position(0,0,0,1)
+		element.spread(30)
+		element.intensity(100)
+		element.color(255,0,0)
+		viz.link(car, element)
+
+	#####################Cross Walk Light####################
+	greenLight = viz.addLight()
+	greenLight.color(0,255,0)
+	greenLight.setPosition(0,0,10)
+
+	redLight = viz.addLight()
+	redLight.color(255,0,0)
+	redLight.setPosition(0,2,10)
+	
+	vizact.ontimer(0.01, GetCarPosition)	
+
 
 ############################Timer#########################
 time = 0
@@ -220,12 +236,20 @@ def calibrationCheck() :
 	global center
 	global text
 	
+	#viz.MainView.setScene(4)
+	center.visible(viz.ON)
+	calibration.visible(viz.ON)
+	text.visible(viz.ON)
+	
 	while(True) :
-		if mainViewEuler[0] > calibrationEuler[0]-1 and mainViewEuler[0] < calibrationEuler[0]+1 and mainViewEuler[1] > calibrationEuler[1]-1 and mainViewEuler[1] < calibrationEuler[1]+1 and mainViewEuler[2] > calibrationEuler[2]-1 and mainViewEuler[2] < calibrationEuler[2]+1:
-			calibration.visible(viz.OFF)
-			center.visible(viz.OFF)
-			text.visible(viz.OFF)
-			break;
+		if mainViewEuler[0] > calibrationEuler[0]-1 and mainViewEuler[0] < calibrationEuler[0]+1: 
+			if mainViewEuler[1] > calibrationEuler[1]-1 and mainViewEuler[1] < calibrationEuler[1]+1:
+				if mainViewEuler[2] > calibrationEuler[2]-1 and mainViewEuler[2] < calibrationEuler[2]+1:
+					calibration.visible(viz.OFF)
+					center.visible(viz.OFF)
+					text.visible(viz.OFF)
+					#viz.MainView.setScene(1)
+					break;
 			
 	return True
 
@@ -307,10 +331,13 @@ def TestReactionTime():
 	
 	viz.MainView.setEuler(calibrationEuler)
 	viz.MainView.setScene(1)
-	Reset()
+	
 	
 	startCalibration()
 	yield viztask.waitDirector(calibrationCheck)
+	
+	addObjects()
+	Reset()
 	
 	#Start test from space down
 	yield viztask.waitKeyDown(' ')
@@ -396,7 +423,7 @@ def TestReactionTime():
 
 viztask.schedule(TestReactionTime())
 ##############################################################################
-vizact.ontimer(0.01, GetCarPosition)	
+#vizact.ontimer(0.01, GetCarPosition)	
 
 #don't move out mouse pointer
 viz.mouse.setTrap()
