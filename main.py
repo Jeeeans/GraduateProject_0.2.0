@@ -6,8 +6,13 @@ import vizinfo
 import random
 import viztask
 import vizdlg
+import math
+import time
 
 viz.go()
+
+level = 1
+stage = 6
 
 #####################Input Information Form#####################
 class InputForm(vizdlg.Dialog):
@@ -53,38 +58,170 @@ class InputForm(vizdlg.Dialog):
 
 
 ################################Task Information############################
-info = vizinfo.InfoPanel("Task Information.", align=viz.ALIGN_CENTER_CENTER, icon=False)
+#info = vizinfo.InfoPanel("Task Information.", align=viz.ALIGN_CENTER_CENTER, icon=False)
+
 def showTaskInfo():
-	global info
-	info.addSeparator()
-	taskInfo = "이것은 Virtual Street Task 입니다. 이 테스트는 길을 건너오는 아바타가 차에 치이지 않도록 하는 것이 목적입니다.\n 차가 나오는 방향에 따라 마우스의 왼쪽 또는 오른쪽 버튼을 누르십시오. 차가 왼쪽에서 나타난다면 왼쪽버튼을 오른쪽에서 나타난다면 오른쪽버튼을 누르시면 됩니다. 차가 나오는 방향을 맞추셨다면 점점 난이도가 올라가게 될 것입니다."
-	info.addItem(viz.addText(taskInfo))
+	global infoText
+	
+	infoText = viz.addTexQuad(viz.SCREEN)
+	infoText.setScale([12,10,0])
+	infoText.setPosition([.5,.5,0])
+	image = viz.addTexture('art/infoText.jpg')
+	image.wrap( viz.WRAP_S, viz.CLAMP_TO_EDGE )
+	image.wrap( viz.WRAP_T, viz.CLAMP_TO_EDGE )
+	infoText.texture( image, '', 1 )
 		
 
 #####################Insight#######################
 viz.MainView.setPosition([0,1,0])
 mainViewEuler = []
 def onMouseMove(e):
-	global mainViewEuler
-	mainViewEuler = viz.MainView.getEuler()
-	mex = mainViewEuler[0]
-	mey = mainViewEuler[1]
-	if mainViewEuler[0] +(e.dx*0.5) > -60 and mainViewEuler[0] +(e.dx*0.5) < 60 :
-		mex = mainViewEuler[0] +(e.dx*0.2)
-	if mainViewEuler[1] - (e.dy*0.5) >-30 and mainViewEuler[1] - (e.dy*0.5) < 20 :
-		mey = mainViewEuler[1] - (e.dy*0.2)
+		global mainViewEuler
+		mainViewEuler = viz.MainView.getEuler()
+		mex = mainViewEuler[0]
+		mey = mainViewEuler[1]
+		if mainViewEuler[0] +(e.dx*0.5) > -60 and mainViewEuler[0] +(e.dx*0.5) < 60 :
+			mex = mainViewEuler[0] +(e.dx*0.2)
+		if mainViewEuler[1] - (e.dy*0.5) >-30 and mainViewEuler[1] - (e.dy*0.5) < 20 :
+			mey = mainViewEuler[1] - (e.dy*0.2)
 	
-	viz.MainView.setEuler(mex, mey, mainViewEuler[2])
+		viz.MainView.setEuler(mex, mey, mainViewEuler[2], viz.REL_PARENT)
 
 
 viz.callback(viz.MOUSE_MOVE_EVENT, onMouseMove)
 viz.mouse(viz.OFF)
 
+#########################Avatar Move##########################
+def move(location):
+	global avatar
+	global view_link
+	global stage
+	
+	
+	#view_link.remove()
+	[x,y,z] = avatar.getPosition()
+	[xr,yr,zr] = avatar.getEuler()
+	
+	if location == 'forward':
+		avatar.setPosition([0, 0, 0.05], viz.ABS_LOCAL)
+		viz.MainView.setPosition([0, 0, 0.05], viz.REL_GLOBAL)
+		avatar.state(2)
+	elif location == 'back':
+		avatar.setPosition([0, 0, -0.05], viz.ABS_LOCAL)
+		viz.MainView.setPosition([0, 0, -0.05], viz.REL_GLOBAL)
+	elif location == 'left_turn':
+		avatar.setEuler([-2, 0, 0], viz.REL_GLOBAL)
+	elif location == 'right_turn': 
+		avatar.setEuler([2, 0, 0], viz.REL_GLOBAL)
+	elif location == 'left':
+		avatar.setPosition([-0.05,0,0],viz.ABS_LOCAL)
+	elif location == 'right':
+		avatar.setPosition([0.05,0,0], viz.ABS_LOCAL)
+	
+	#print [xr,yr,zr]
+	#[xrm,yr,zr] = avatar.getEuler()
+	#view_link = viz.link(avatar, viz.MainView, offset=(-1*stage*math.sin(xrm-xr),2,stage* math.cos(xrm-xr)))
+	
+def stop():
+	global avatar
+	avatar.clearActions()
+
+vizact.whilekeydown('w', move, 'forward')
+vizact.whilekeydown('s', move, 'back')
+#vizact.whilekeydown('a', move, 'left_turn')
+#vizact.whilekeydown('d', move, 'right_turn')
+#vizact.whilekeydown('q', move, 'left')
+#vizact.whilekeydown('e', move, 'right')
+vizact.onkeyup('w', stop)
+
+#####################BackGround###################
+ground = viz.add('ground.osgb')
+
+ground.collidePlane(0,1,0,0)
+ground.setScale(10,10,10)
+crossWalk = viz.addTexture('art/crossWalkSmall_1.jpg')
+crossWalk.wrap(viz.WRAP_S, viz.REPEAT)
+crossWalk.wrap(viz.WRAP_T, viz.REPEAT)
+
+ground.texture(crossWalk,'',0)
+
+env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
+
+dome = viz.add('skydome.dlc')
+dome.texture(env)
+
+#####################Avatar#####################
+avatar = viz.add('vcc_male.cfg')
+avatar.setEuler(0,0,0)
+avatar.clearActions()
+head_bone = avatar.getBone('Bip01 Head')
+
+viz.MainView.setPosition([0,2,-80 + 1-stage])
+global view_link
+#view_link = viz.link(avatar, viz.MainView, offset=(0,2,-5))
+
+
+
+avatar.collideBox()
+avatar.enable(viz.COLLIDE_NOTIFY)
+avatar.state(1)
+
+#####################Car########################
+car = viz.add('mini.osgx')
+car.texblend(0.15,'',1)
+car.collideBox()
+
+carLoc = random.randint(0,2)
+car.setPosition(15,100,5)
+
+LeftHeadLight = viz.addLight()
+LeftHeadLight.position(0,0,0,1)
+LeftHeadLight.spread(30)
+LeftHeadLight.intensity(100)
+LeftHeadLight.color(255,0,0)
+
+viz.MainView.getHeadLight().disable()
+
+RightHeadLight = viz.addLight()
+RightHeadLight.position(0,0,0,1)
+RightHeadLight.spread(30)
+RightHeadLight.intensity(100)
+RightHeadLight.color(255,0,0)
+
+viz.link(car, LeftHeadLight)
+viz.link(car, RightHeadLight)
+
+#####################Cross Walk Light####################
+greenLight = viz.addLight()
+greenLight.color(0,255,0)
+greenLight.setPosition(0,0,10)
+
+redLight = viz.addLight()
+redLight.color(255,0,0)
+redLight.setPosition(0,2,10)
+
+#########################Building##########################
+building = viz.add('test.osg')
+building.setPosition(0,10,80)
+building.setEuler(0,0,0)
+building.setScale(10,10,10)
+
+############################Timer#########################
+#time = 0
+def Timer():
+	global time
+	time = time + 0.01
+
+#vizact.ontimer(0.01, Timer)
+
 #################Calibration################
 calibration = viz.addText('O', viz.WORLD)
 calibration.color(255,0,0)
-calibration.setPosition(-.25,1,10)
+
+
+calibration.setPosition([0,2,-70 + 1-stage])
 calibration.setScale(.7,.7,.7)
+
 calibrationEuler = []
 calibrationEuler = calibration.getEuler()
 calibration.visible(viz.OFF)
@@ -93,114 +230,93 @@ center = viz.addText('O', viz.SCREEN)
 center.setPosition(.475, .5)
 center.visible(viz.OFF)
 
-text = viz.addText('빨간원에 하얀원을 맞추십시오.', viz.SCREEN)
-text.setPosition(.1,.6)
+
+text = viz.addTexQuad(viz.SCREEN)
+text.setPosition([.5,.7, 0])
+text.setScale([6,1,0])
+image = viz.addTexture('art/calText.jpg')
+image.wrap( viz.WRAP_S, viz.CLAMP_TO_EDGE )
+image.wrap( viz.WRAP_T, viz.CLAMP_TO_EDGE )
+text.texture( image, '', 1 )
 text.visible(viz.OFF)
 
 
-#########################Objects########################
-
-
-def addObjects():
-	global ground
-	global dome
-	global avatar
-	global car
-	global carLoc
-	global greenLight
-	global redLight
-	#####################BackGround###################
-	ground = viz.add('ground.osgb')
-
-	ground.collidePlane(0,1,0,0)
-	#env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
-
-	dome = viz.add('skydome.dlc')
-	#dome.texture(env)
-
-	#####################Avatar#####################
-	avatar = viz.add('vcc_male.cfg')
-	avatar.setEuler(180,0,0)
-	avatar.clearActions()
-	avatar.collideSphere()
-	avatar.enable(viz.COLLIDE_NOTIFY)
-	avatar.state(1)
-
-	#####################Car########################
-	car = viz.add('mini.osgx')
-	car.texblend(0.15,'',1)
-	car.collideBox()
-
-	carLoc = random.randint(0,2)
-	car.setPosition(15,100,5)
-	headLight = [1,2]
-	for element in headLight:
-		element = viz.addLight()
-		element.position(0,0,0,1)
-		element.spread(30)
-		element.intensity(100)
-		element.color(255,0,0)
-		viz.link(car, element)
-
-	#####################Cross Walk Light####################
-	greenLight = viz.addLight()
-	greenLight.color(0,255,0)
-	greenLight.setPosition(0,0,10)
-
-	redLight = viz.addLight()
-	redLight.color(255,0,0)
-	redLight.setPosition(0,2,10)
-	
-	vizact.ontimer(0.01, GetCarPosition)	
-
-
-############################Timer#########################
-time = 0
-def Timer():
-	global time
-	time = time + 0.01
-
-vizact.ontimer(0.01, Timer)
-
 ##########################Functions########################
-level = 1
-stage = 1
 carPosition = 0
 
 collideFlag = False
 visualFlag = False
 auditoryFlag = False
 
+def objectVisible( status ):
+	global avatar
+	global car
+	global building
+	global ground
+	global dome
+	
+	if status is "on":
+		avatar.visible(viz.ON)
+		car.visible(viz.ON)
+		building.visible(viz.ON)
+		ground.visible(viz.ON)
+		dome.visible(viz.ON)
+	elif status is "off":
+		avatar.visible(viz.OFF)
+		car.visible(viz.OFF)
+		building.visible(viz.OFF)
+		ground.visible(viz.OFF)
+		dome.visible(viz.OFF)
+		
 
 def avatar_move():
-	#avatar.setVelocity([0,0,level*-1-2], viz.ABS_GLOBAL)
-	avatar.addAction(vizact.move(0,0,level+1, 6))
-	avatar.state(2)
+	global avatar
+	global car
+	global level
+	global moveTimer
 
+	
 	if carLoc%2 == 1:
-		#car.setVelocity([level*-1-2,0,0], viz.ABS_GLOBAL)
 		car.setEuler([-90,0,0], viz.ABS_GLOBAL)
-		car.addAction(vizact.move(0,0,level+1,6))
 	else :
-		#car.setVelocity([level+2,0,0], viz.ABS_GLOBAL)
 		car.setEuler([90,0,0], viz.ABS_GLOBAL)
-		car.addAction(vizact.move(0,0,level+1,6))
+
 		
-def Reset():
-	global carLoc
-	global stage
+	def moveF():
+		avatar.setPosition([0, 0, 0.02+level*0.01], viz.ABS_LOCAL)
+		viz.MainView.setPosition([0, 0, 0.02+level*0.01], viz.REL_GLOBAL)
+		avatar.state(2)
+		if carLoc%2 == 1:
+			car.setPosition([0, 0, 0.01*level+0.02], viz.ABS_LOCAL)
+		else :
+			car.setPosition([0, 0, 0.01*level+0.02], viz.ABS_LOCAL)
+		
+	moveTimer = vizact.ontimer(0.01, moveF)
+	
+		
+def AvatarReset():
+	global avatar
 	
 	avatar.reset()
 	avatar.clearActions()
-	avatar.setPosition(0,0,21-stage)
+	avatar.setPosition(0,0,-80)
+	viz.MainView.setPosition([0,2,-80 -stage])
+
+def CarReset():
+	global carLoc
+	global car
 	
 	carLoc = random.randint(0,2)
 	car.reset()
 	car.clearActions()
-	car.setPosition(10,100,5)
+	car.setPosition(15,0,80)
+	car.setEuler([90,0,0], viz.ABS_GLOBAL)
+
+hoot = viz.addAudio('art/hoot.mp3')
 
 def GetCarPosition():
-	global carPosition
+	global car
+	global avatar
 	global visualFlag
 	global auditoryFlag
 	global stage
@@ -209,24 +325,35 @@ def GetCarPosition():
 
 	if carPosition[0] != 10 :
 		if carLoc%2 == 1 :
-			if carPosition[0] < (13-stage)/3 :
+			if carPosition[0] < 6 and carPosition[0] > 0:
 				auditoryFlag = True
-			elif carPosition[0] < (13-stage)*2/3 :
+				hoot.play()
+			elif carPosition[0] < 10 and carPosition[0] > 0:
 				visualFlag = True
 		else :
-			if -1*carPosition[0] < (-13+stage)/3 :
+			if carPosition[0] > -6 and carPosition[0] < 0 :
 				auditoryFlag = True
-			elif -1*carPosition[0] < (-13+stage)*2/3 :
+				hoot.play()
+			elif carPosition[0] > -10 and carPosition[0] < 0:
 				visualFlag = True
 				
+vizact.ontimer(0.01, GetCarPosition)	
+
 def startCalibration() :
 	global center
 	global calibration
 	global text
-	
-	center.visible(viz.ON)
+	global image
+
+	image = viz.addTexture('art/firstCalText.jpg')
+	text.texture( image, '', 1 )
+
+
+	#center.visible(viz.ON)
 	calibration.visible(viz.ON)
 	text.visible(viz.ON)
+	
+	
 	
 def calibrationCheck() :
 	global mainViewEuler
@@ -236,56 +363,64 @@ def calibrationCheck() :
 	global center
 	global text
 	
-	#viz.MainView.setScene(4)
 	center.visible(viz.ON)
 	calibration.visible(viz.ON)
 	text.visible(viz.ON)
 	
 	while(True) :
-		if mainViewEuler[0] > calibrationEuler[0]-1 and mainViewEuler[0] < calibrationEuler[0]+1: 
-			if mainViewEuler[1] > calibrationEuler[1]-1 and mainViewEuler[1] < calibrationEuler[1]+1:
-				if mainViewEuler[2] > calibrationEuler[2]-1 and mainViewEuler[2] < calibrationEuler[2]+1:
+		if mainViewEuler[0] > calibrationEuler[0]-1 and mainViewEuler[0] < calibrationEuler[0]+1 :
+			if mainViewEuler[1] > calibrationEuler[1]-1 and mainViewEuler[1] < calibrationEuler[1]+1 :
+				if mainViewEuler[2] > calibrationEuler[2]-1 and mainViewEuler[2] < calibrationEuler[2]+1 :
 					calibration.visible(viz.OFF)
 					center.visible(viz.OFF)
 					text.visible(viz.OFF)
-					#viz.MainView.setScene(1)
 					break;
-			
+
 	return True
 
 def correctReact():
 	global level
 	global stage
-	if level < 4 :
+	if level < 5 :
 		level = level + 1
 	elif stage < 6 :
-		stage = stage + 1
+		stage = stage - 1
+		level = 1
 		
 def incorrectReact():
 	global level
 	global stage
 	global taskFail
-	if stage > 1 :
-		stage = stage - 1
+	if stage < 6 :
+		stage = stage + 1
+		level = 1
 	elif level > 1 :
 		level = level - 1
 	taskFail += 1
+	taskFlag = True
 	
 
 ###############################Training##############################
 taskFail = 0
+taskFlag = False
 def TestReactionTime():
-	global time
 	global level
 	global stage
 	
 	global visualFlag
 	global auditoryFlag
+	global taskFlag
 	
 	global taskFail
+	global moveTimer
+	
 	testCount = 0
 	leftReactionTime = 0
+	leftCount = 0
+	totalLeft = 0
 	rightReactionTime = 0
+	rightCount = 0
+	totalRight = 0
 	
 	visualCue = 0
 	auditoryCue = 0
@@ -293,9 +428,10 @@ def TestReactionTime():
 	waitMouseLEFT = viztask.waitMouseDown(viz.MOUSEBUTTON_LEFT)
 	waitMouseRIGHT = viztask.waitMouseDown(viz.MOUSEBUTTON_RIGHT)
 	waitCollide = viztask.waitEvent(viz.COLLIDE_BEGIN_EVENT)
-
+	waitTime = viztask.waitTime(4)
 	#######User Input########
-	viz.MainView.setScene(3)
+	#viz.MainView.setScene(2)
+	objectVisible("off")
 	viz.mouse.setVisible(viz.ON)
 	
 	
@@ -310,123 +446,147 @@ def TestReactionTime():
 		name = form.name.get()
 		number = form.number.get()
 		level = int(form.level.get())
-		stage = int(form.stage.get())
+		stage = 7-int(form.stage.get())
 		
 		######################ResultFile#########################
 		fileName = 'result_'+name+'('+number+').txt'
 		resultFile = open(fileName, "w")
 
-		result = "Reaction time\tLeft Reaction Time\tRight ReactionTime\n"
+		result = "%s\t%s\t%s\t%s\t%s\t%s\n" % ("reation time", "left reation time", "right reation time", "visual que", "auditory que", "task Fail")
 		resultFile.write(result)
-		#print 'name:',name,'level:',level,'stage:',stage
 		
 	form.remove()
+	
+	
+	
 	viz.mouse.setVisible(viz.OFF)
+	#info를 보여준다.
+	global infoText
+	yield viztask.waitDirector(showTaskInfo)
 	
-	
-	showTaskInfo()
 	yield viztask.waitTime(4)
-	global info
-	info.visible(viz.OFF)
 	
-	viz.MainView.setEuler(calibrationEuler)
-	viz.MainView.setScene(1)
+	infoText.visible(viz.OFF)
+	
+	#viz.MainView.setEuler(calibrationEuler)
 	
 	
-	startCalibration()
-	yield viztask.waitDirector(calibrationCheck)
+	yield viztask.waitDirector(startCalibration)
+	yield viztask.waitKeyDown(' ')
 	
-	addObjects()
-	Reset()
+	viz.MainView.setEuler(0,0,0)
+	calibration.visible(viz.OFF)
+	text.visible(viz.OFF)
+	
+	image = viz.addTexture('art/calText.jpg')
+	text.texture( image, '', 1 )
+	
+	CarReset()
+	AvatarReset()
+	
+	avatar_move()
+	moveTimer.remove()
+	
+	objectVisible("on")
 	
 	#Start test from space down
 	yield viztask.waitKeyDown(' ')
-	
+	vizact.ontimer(0.01, GetCarPosition)
 	#test
-	while testCount < 10:
-		yield viztask.waitTime(vizmat.GetRandom(2,4))
-		
-		avatar_move()
-		
-		d = yield viztask.waitDraw()
-		
-		#Move Car Position
-		if carLoc%2 == 1 :
-			car.setPosition(13-stage,0.1,10)
-		else :
-			car.setPosition(-13+stage,0.1,10)
-
-		
-		#Save start time
-		startTime = time
-		
-		#Wait for mouse reaction or collide event
-		d = yield viztask.waitAny([waitMouseLEFT, waitMouseRIGHT, waitCollide])
-		
-		reactionTime = time - startTime
-		leftReactionTime=0
-		rightReactionTime=0
-		if d.condition is waitMouseLEFT:
-			if carLoc%2 == 1:
-				incorrectReact()
-				leftReactionTime = 0
-				rightReactionTime = reactionTime
-			else :
-				correctReact()
-				leftReactionTime = reactionTime
-				rightReactionTime = 0
-		elif d.condition is waitMouseRIGHT:
-			if carLoc%2 == 1:
-				correctReact()
-				leftReactionTime = 0
-				rightReactionTime = reactionTime
-			else :
-				incorrectReact()
-				leftReactionTime = reactionTime
-				rightReactionTime = 0
-		elif d.condition is waitCollide:
-			if stage < 6 :
-				stage = stage + 1
-			elif level > 1 :
-				level = level - 1
-			taskFail += 1
-		
-		
-		if visualFlag :
-			visualCue += 1
-			visualFlag = False
-		if auditoryFlag :
-			auditoryCue += 1
-			auditoryFlag = False
+	while testCount < 30:
+		while level < 5:
+			yield viztask.waitTime(vizmat.GetRandom(1,4))
+			moveTimer.remove()
+			avatar_move()
 			
+			d = yield viztask.waitDraw()
+			
+			#Move Car Position
+			global avatar
+			[x,y,z] = avatar.getPosition()
+			if carLoc%2 == 1 :
+				car.setPosition(13,0,z+10)
+			else :
+				car.setPosition(-13,0,z+10)
+				
+			
+			#Save start time
+			startTime = time.time()
+			
+			#Wait for mouse reaction or collide event
+			d = yield viztask.waitAny([waitMouseLEFT, waitMouseRIGHT, waitCollide])
+
+			reactionTime = time.time() - startTime
+			leftReactionTime=0
+			rightReactionTime=0
+			hoot.stop()
+			if d.condition is waitMouseLEFT:
+				if carLoc%2 == 1:
+					incorrectReact()
+					rightReactionTime = reactionTime
+				else :
+					correctReact()
+					leftReactionTime = reactionTime
+					leftCount += 1
+					totalLeft += reactionTime
+			elif d.condition is waitMouseRIGHT:
+				if carLoc%2 == 1:
+					correctReact()
+					rightReactionTime = reactionTime
+					rightCount += 1
+					totalRight += reactionTime
+				else :
+					incorrectReact()
+					leftReactionTime = reactionTime
+			elif d.condition is waitCollide:
+				if stage < 6 :
+					stage = stage + 1
+					level = 1
+				elif level > 1 :
+					level = level - 1
+				taskFail += 1
+				taskFlag = True
+			
+			
+			if visualFlag :
+				visualCue += 1
+			if auditoryFlag :
+				auditoryCue += 1
+				
+			
+			result = "%.3f\t%.3f\t%.3f\t%s\t%s\t%s\n" % (reactionTime, leftReactionTime, rightReactionTime, visualFlag, auditoryFlag, taskFlag)
+			resultFile.writelines(result)
+			visualFlag = False
+			auditoryFlag = False
+			taskFlag = False
+			
+			
+			
+			CarReset()
+			testCount += 1
 		
-		#print 'Task ',testCount+1,' Traing'
-		#print 'Reaction time : ',reactionTime
-		#print 'Left Reaction Time : ',leftReactionTime
-		#print 'Right Reaction Time : ',rightReactionTime
 		
-		result = "%f\t\t%f\t\t%f\n" % (reactionTime, leftReactionTime, rightReactionTime)
-		resultFile.writelines(result)
-		
-		
-		testCount += 1
-		Reset()
-		
-		startCalibration()
+		AvatarReset()
+		level = 1
+		stage -= 1
+		avatar.clearActions()
+		avatar.state(1)
+		moveTimer.remove()
 		yield viztask.waitDirector(calibrationCheck)
 		
-	result = "\nVisualCue : %d\tAuditoryCue : %d\tFailCount : %d\n" % (visualCue, auditoryCue, taskFail)
+	LtoR = ((totalLeft/leftCount) + (totalLeft%leftCount))/((totalRight/rightCount)+(totalRight%rightCount))
+	VC = visualCue/30 + visualCue%30
+	AC = auditoryCue/30 + auditoryCue%30
+	TF = taskFail/30 + taskFail%30
+	result = "Left to Right Ration : %.3f\nVisualCue Rate : %.3f\nAuditoryCue Rate : %.3f\nFail Rate : %.3f\n" % (LtoR, VC, AC, TF)
 	resultFile.write(result)
-	#print 'vizsualCue : ',visualCue
-	#print 'auditorycue : ',auditoryCue
-	#print 'FailCount : ',taskFail
 
 viztask.schedule(TestReactionTime())
 ##############################################################################
-#vizact.ontimer(0.01, GetCarPosition)	
+	
 
 #don't move out mouse pointer
 viz.mouse.setTrap()
-#unvisible mouse pointer
+
 
 viz.phys.enable()
