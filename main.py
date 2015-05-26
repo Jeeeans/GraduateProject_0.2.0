@@ -3,6 +3,7 @@ import viz
 import vizact
 import vizinput
 import vizinfo
+import vizshape
 import random
 import viztask
 import vizdlg
@@ -128,22 +129,38 @@ def stop():
 
 vizact.whilekeydown('w', move, 'forward')
 vizact.whilekeydown('s', move, 'back')
-#vizact.whilekeydown('a', move, 'left_turn')
-#vizact.whilekeydown('d', move, 'right_turn')
-#vizact.whilekeydown('q', move, 'left')
-#vizact.whilekeydown('e', move, 'right')
+vizact.whilekeydown('a', move, 'left_turn')
+vizact.whilekeydown('d', move, 'right_turn')
+vizact.whilekeydown('q', move, 'left')
+vizact.whilekeydown('e', move, 'right')
 vizact.onkeyup('w', stop)
 
 #####################BackGround###################
 ground = viz.add('ground.osgb')
-
 ground.collidePlane(0,1,0,0)
-ground.setScale(10,10,10)
-crossWalk = viz.addTexture('art/crossWalkSmall_1.jpg')
+ground.setScale(5,1,5)
+
+concrete = viz.addTexture('art/asphalt.jpg')
+concrete.wrap(viz.WRAP_S, viz.REPEAT)
+concrete.wrap(viz.WRAP_T, viz.REPEAT)
+
+ground.texture(concrete,'',0)
+
+crossWalk = viz.addTexture('art/crossWalk.png')
 crossWalk.wrap(viz.WRAP_S, viz.REPEAT)
 crossWalk.wrap(viz.WRAP_T, viz.REPEAT)
 
-ground.texture(crossWalk,'',0)
+crossWalkBase = viz.addTexQuad()
+crossWalkBase.setEuler([0, 90, 90])
+crossWalkBase.setPosition([0,0.1,0])
+crossWalkBase.texture(crossWalk, '', 1)
+crossWalkBase.setScale([155, 7, 0])
+
+matrix = vizmat.Transform()
+matrix.setScale([20,1,0])
+
+crossWalkBase.texmat(matrix, '', 1)
+crossWalkBase.texblend(1,'',1)
 
 env = viz.add(viz.ENVIRONMENT_MAP,'sky.jpg')
 
@@ -158,8 +175,6 @@ head_bone = avatar.getBone('Bip01 Head')
 
 viz.MainView.setPosition([0,2,-80 + 1-stage])
 global view_link
-#view_link = viz.link(avatar, viz.MainView, offset=(0,2,-5))
-
 
 
 avatar.collideBox()
@@ -172,39 +187,47 @@ car.texblend(0.15,'',1)
 car.collideBox()
 
 carLoc = random.randint(0,2)
-car.setPosition(15,100,5)
+car.setPosition(20,0,-100)
 
-LeftHeadLight = viz.addLight()
-LeftHeadLight.position(0,0,0,1)
-LeftHeadLight.spread(30)
-LeftHeadLight.intensity(100)
-LeftHeadLight.color(255,0,0)
+##auditory que(hoot sound)##
+left = viz.add('white_ball.wrl')
+left.visible(viz.OFF)
+leftSound = left.playsound('art/hoot.wav')
+leftSound.stop()
+lsl = viz.link(viz.MainView, left)
+lsl.preTrans([-13,0,0])
 
-viz.MainView.getHeadLight().disable()
+right = viz.add('white_ball.wrl')
+right.visible(viz.OFF)
+rightSound = right.playsound('art/hoot.wav')
+rightSound.stop()
+rsl = viz.link(viz.MainView, right)
+rsl.preTrans([13,0,0])
 
-RightHeadLight = viz.addLight()
-RightHeadLight.position(0,0,0,1)
-RightHeadLight.spread(30)
-RightHeadLight.intensity(100)
-RightHeadLight.color(255,0,0)
+##viusal que(head light)##
+LeftHeadLight = vizshape.addCone()
+LeftHeadLight.setParent(car)
+LeftHeadLight.setScale(0.7,6,0.7)
+LeftHeadLight.color(viz.YELLOW)
+LeftHeadLight.setPosition([-0.6,0.65,2.5], viz.REL_PARENT)
+LeftHeadLight.setEuler([-90,0,90], viz.REL_PARENT)
+LeftHeadLight.drawOrder(1, '', viz.BIN_TRANSPARENT)
+LeftHeadLight.visible(viz.OFF)
 
-viz.link(car, LeftHeadLight)
-viz.link(car, RightHeadLight)
-
-#####################Cross Walk Light####################
-greenLight = viz.addLight()
-greenLight.color(0,255,0)
-greenLight.setPosition(0,0,10)
-
-redLight = viz.addLight()
-redLight.color(255,0,0)
-redLight.setPosition(0,2,10)
+RightHeadLight = vizshape.addCone()
+RightHeadLight.setParent(car)
+RightHeadLight.setScale(0.7,6,0.7)
+RightHeadLight.color(viz.YELLOW)
+RightHeadLight.setPosition([0.6,0.65,2.5], viz.REL_PARENT)
+RightHeadLight.setEuler([-90,0,90], viz.REL_PARENT)
+RightHeadLight.drawOrder(1,'',viz.BIN_TRANSPARENT)
+RightHeadLight.visible(viz.OFF)
 
 #########################Building##########################
-building = viz.add('test.osg')
-building.setPosition(0,10,80)
+building = viz.add('art/building.osgb')
+building.setPosition(-400,-20,1000)
 building.setEuler(0,0,0)
-building.setScale(10,10,10)
+building.setScale(.1,.1,.1)
 
 ############################Timer#########################
 #time = 0
@@ -216,6 +239,7 @@ def Timer():
 
 #################Calibration################
 calibration = viz.addText('O', viz.WORLD)
+calibration.setCenter([0,0,0])
 calibration.color(255,0,0)
 
 
@@ -227,14 +251,14 @@ calibrationEuler = calibration.getEuler()
 calibration.visible(viz.OFF)
 
 center = viz.addText('O', viz.SCREEN)
-center.setPosition(.475, .5)
+center.setPosition(.5, .5)
 center.visible(viz.OFF)
 
 
 text = viz.addTexQuad(viz.SCREEN)
 text.setPosition([.5,.7, 0])
 text.setScale([6,1,0])
-image = viz.addTexture('art/calText.jpg')
+image = viz.addTexture('art/calText.png')
 image.wrap( viz.WRAP_S, viz.CLAMP_TO_EDGE )
 image.wrap( viz.WRAP_T, viz.CLAMP_TO_EDGE )
 text.texture( image, '', 1 )
@@ -260,12 +284,14 @@ def objectVisible( status ):
 		car.visible(viz.ON)
 		building.visible(viz.ON)
 		ground.visible(viz.ON)
+		crossWalkBase.visible(viz.ON)
 		dome.visible(viz.ON)
 	elif status is "off":
 		avatar.visible(viz.OFF)
 		car.visible(viz.OFF)
 		building.visible(viz.OFF)
 		ground.visible(viz.OFF)
+		crossWalkBase.visible(viz.OFF)
 		dome.visible(viz.OFF)
 		
 
@@ -309,10 +335,9 @@ def CarReset():
 	carLoc = random.randint(0,2)
 	car.reset()
 	car.clearActions()
-	car.setPosition(15,0,80)
-	car.setEuler([90,0,0], viz.ABS_GLOBAL)
+	car.setPosition(15,0,-100)
 
-hoot = viz.addAudio('art/hoot.mp3')
+
 
 def GetCarPosition():
 	global car
@@ -322,20 +347,26 @@ def GetCarPosition():
 	global stage
 	
 	carPosition = car.getPosition();
-
+	[x,y,z] = viz.MainView.getPosition()
 	if carPosition[0] != 10 :
 		if carLoc%2 == 1 :
 			if carPosition[0] < 6 and carPosition[0] > 0:
 				auditoryFlag = True
-				hoot.play()
+				right.setPosition([13,0,z])
+				rightSound.play()
 			elif carPosition[0] < 10 and carPosition[0] > 0:
 				visualFlag = True
+				LeftHeadLight.visible(viz.ON)
+				RightHeadLight.visible(viz.ON)
 		else :
 			if carPosition[0] > -6 and carPosition[0] < 0 :
 				auditoryFlag = True
-				hoot.play()
+				left.setPosition([-13,0,z])
+				leftSound.play()
 			elif carPosition[0] > -10 and carPosition[0] < 0:
 				visualFlag = True
+				LeftHeadLight.visible(viz.ON)
+				RightHeadLight.visible(viz.ON)
 				
 vizact.ontimer(0.01, GetCarPosition)	
 
@@ -348,8 +379,6 @@ def startCalibration() :
 	image = viz.addTexture('art/firstCalText.jpg')
 	text.texture( image, '', 1 )
 
-
-	#center.visible(viz.ON)
 	calibration.visible(viz.ON)
 	text.visible(viz.ON)
 	
@@ -430,7 +459,6 @@ def TestReactionTime():
 	waitCollide = viztask.waitEvent(viz.COLLIDE_BEGIN_EVENT)
 	waitTime = viztask.waitTime(4)
 	#######User Input########
-	#viz.MainView.setScene(2)
 	objectVisible("off")
 	viz.mouse.setVisible(viz.ON)
 	
@@ -464,11 +492,9 @@ def TestReactionTime():
 	global infoText
 	yield viztask.waitDirector(showTaskInfo)
 	
-	yield viztask.waitTime(4)
+	yield viztask.waitKeyDown(' ')
 	
 	infoText.visible(viz.OFF)
-	
-	#viz.MainView.setEuler(calibrationEuler)
 	
 	
 	yield viztask.waitDirector(startCalibration)
@@ -478,7 +504,7 @@ def TestReactionTime():
 	calibration.visible(viz.OFF)
 	text.visible(viz.OFF)
 	
-	image = viz.addTexture('art/calText.jpg')
+	image = viz.addTexture('art/calText.png')
 	text.texture( image, '', 1 )
 	
 	CarReset()
@@ -519,7 +545,15 @@ def TestReactionTime():
 			reactionTime = time.time() - startTime
 			leftReactionTime=0
 			rightReactionTime=0
-			hoot.stop()
+			
+			if carLoc%2 == 1:
+				rightSound.stop()
+			else :
+				leftSound.stop()
+			LeftHeadLight.visible(viz.OFF)
+			RightHeadLight.visible(viz.OFF)
+			
+			
 			if d.condition is waitMouseLEFT:
 				if carLoc%2 == 1:
 					incorrectReact()
@@ -572,7 +606,8 @@ def TestReactionTime():
 		avatar.clearActions()
 		avatar.state(1)
 		moveTimer.remove()
-		yield viztask.waitDirector(calibrationCheck)
+		if testCount != 30 :
+			yield viztask.waitDirector(calibrationCheck)
 		
 	LtoR = ((totalLeft/leftCount) + (totalLeft%leftCount))/((totalRight/rightCount)+(totalRight%rightCount))
 	VC = visualCue/30 + visualCue%30
